@@ -23,7 +23,6 @@ class Zakaz(StatesGroup):
 zakaz=[]
 
 
-# Канопкахо
 markub=ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Номнавис кардан"),KeyboardButton(text="Заказ равон кардан")],
