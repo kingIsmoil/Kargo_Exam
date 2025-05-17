@@ -29,8 +29,7 @@ def init_models():
             kod varchar(50),
             vazn decimal(10,3),
             adress text,
-            user_id bigint,
-            FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
+            telegram_id bigint
         );
         '''
     )
@@ -57,11 +56,11 @@ def init_kargos(kargos):
     con = open_connection()
     cur = con.cursor()
     cur.execute("""
-    insert into kargos(kod,vazn,adress)
-    values(?,?,?)
+    insert into kargos(kod,vazn,adress,telegram_id)
+    values(?,?,?,?)
 
 
-    """,(kargos["kod"],kargos["vazn"],kargos["adress"]))
+    """,(kargos["kod"],kargos["vazn"],kargos["adress"],kargos['user_id']))
     con.commit()
     close_connection(con,cur)
     
@@ -81,7 +80,7 @@ def show_zakaz():
 def delete_zakaz(kr_id):
     conn = open_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM kargos WHERE id = ?", (kr_id,))
+    cur.execute("DELETE FROM kargos WHERE kod = ?", (kr_id,))
     conn.commit()
     close_connection(conn, cur)
     print("Deleted succefully")
