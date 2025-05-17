@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
-from db import open_connection, init_models, close_connection
+from db import init_models, init_obj,init_kargos,show_zakaz,delete_zakaz,update_zakaz,open_connection,close_connection
 
 TOKEN = '8144030905:AAEYkyyWUJEq9YZ7IgLLHlHpO_-8pVwbBK0'
 
@@ -25,7 +25,6 @@ class User(StatesGroup):
     phone_number = State()
     ind_id = State()
 
-# Канопкахо
 markub=ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Номнавис кардан"),KeyboardButton(text="Заказ равон кардан")],
@@ -86,12 +85,50 @@ async def vazn_hundler(message:Message,state:FSMContext):
     await state.update_data(vazn=message.text)
     await state.set_state(Zakaz.adress)
     await message.answer("Лутфан аддреси худро пурра равон кунед :")
-
+# salom
 
 @dp.message(Zakaz.adress)
 async def adrez_hundler(message:Message,state:FSMContext):
     zakaz= await state.update_data(adress=message.text)
     await message.answer("Шумо бомувафакият закази худро равон кардед. Дар муддати 15 то 25 руз даставка мекунем")
+    await state.update_data(adress=message.text)
+    data = await state.get_data()
+    init_kargos({
+        "kod": data["kod_id"],
+        "vazn": data["vazn"],
+        "adress": data["adress"]
+    })
+    await message.answer("Шумо бомуваффақият закази худро равон кардед. Дар муддати 15 то 25 рӯз даставка мекунем.")
+    await state.clear()
+
+
+
+
+@dp.message(F.text == 'Оиди карго')
+async def a_baout(messege:Message):
+    await messege.answer(
+        """ Мо Somon Cargo карго барои бехатар ва 
+            зуд дар вакти муайян бурда расонидани борхои 
+            шумо . Мо борхо шуморо метавонем дар муддати 
+            15-25 руз оварда мерасонем . Нархи хизматрасонии 
+            мо аз 2$ то 3$ мебошад ва хато дар дохили шахри
+            Душанбе доставкаи ройгон дорем. мо ба хизматрасони 
+            худ кафолат медихем ки борхои шуморо дар вакти
+            муайян ва бе мушкили мерасонем.
+        """)
+    
+    
+@dp.message(F.text == 'Филиалхои мо')
+async def a_filial(messege:Message):
+    await messege.answer(
+    """
+        Мо дар Чумхурии Точикистон 3 то филиали худро дорем:\n
+        1. Фабрикаи "Ширин" -  дар назди фабрика
+        2. "Саховат" - пушти бозори Саховат
+        3. "9 km" - дар наздики "Шарк Транс"
+    """
+    )
+
 
 
 
