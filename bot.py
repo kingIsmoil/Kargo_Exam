@@ -15,7 +15,6 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-# Класи заказ равон кардан
 class Zakaz(StatesGroup):
     kod_id=State()
     vazn=State()
