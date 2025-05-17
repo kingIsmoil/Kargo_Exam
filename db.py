@@ -29,11 +29,12 @@ def init_models():
             kod varchar(50),
             vazn decimal(10,3),
             adress text,
-            user_id int,
+            user_id bigint,
             FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
         );
         '''
     )
+    
 
     con.commit()
     close_connection(con,cur)
