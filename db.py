@@ -85,9 +85,17 @@ def delete_zakaz(kr_id):
     close_connection(conn, cur)
     print("Deleted succefully")
 
-def update_zakaz(pr_id, new_adres):
+def update_kargo_full(pr_id, new_kod=None, new_vazn=None, new_adres=None):
     conn = open_connection()
     cur = conn.cursor()
-    cur.execute("update kargos set adress = ? where id = ?", (new_adres, pr_id))
+
+    if new_kod:
+        cur.execute("UPDATE kargos SET kod = ? WHERE id = ?", (new_kod, pr_id))
+    if new_vazn:
+        cur.execute("UPDATE kargos SET vazn = ? WHERE id = ?", (new_vazn, pr_id))
+    if new_adres:
+        cur.execute("UPDATE kargos SET adress = ? WHERE id = ?", (new_adres, pr_id))
+
     conn.commit()
     close_connection(conn, cur)
+    print("Updated successfully")

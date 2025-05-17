@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from db import (
     init_models, init_kargos, show_zakaz,
-    delete_zakaz, open_connection, close_connection
+    delete_zakaz, open_connection, close_connection,update_kargo_full
 )
 
 TOKEN = "7955520574:AAFnwODOcjoz4tavTWvwN3_RNzPIwUpe_yA"  
@@ -25,12 +25,16 @@ class Zakaz(StatesGroup):
 class User(StatesGroup):
     phone_number = State()
     ind_id = State()
+class EditZakaz(StatesGroup):
+    zakaz_id = State()
+    field = State()
+    new_value = State()
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="📦 Заказ равон кардан")],
         [KeyboardButton(text="🏢 Филиалхои мо"), KeyboardButton(text="ℹ️ Оиди карго")],
-        [KeyboardButton(text="📋 Дидани заказхо"), KeyboardButton(text="❌ Отмена заказ")]
+        [KeyboardButton(text="📋 Дидани заказхо"), KeyboardButton(text="❌ Отмена заказ"),KeyboardButton(text="Ивази заказхо")]
     ],
     resize_keyboard=True
 )
@@ -114,6 +118,7 @@ async def show_my_orders(message: Message):
     response = "📦 Заказҳои шумо:\n\n"
     for zakaz in zakazho:
         response += (
+            f"Id : {zakaz[0]} \n"
             f"🔢 Код: {zakaz[1]}\n"
             f"⚖️ Вазн: {zakaz[2]} кг\n"
             f"📍 Адрес: {zakaz[3]}\n\n"
@@ -128,8 +133,8 @@ async def delete_order_prompt(message: Message, state: FSMContext):
 @dp.message(Zakaz.deleted_id)
 async def delete_order_confirm(message: Message, state: FSMContext):
     deleted = delete_zakaz(message.text)
-    if deleted:
-        await message.answer("✅ Закази шумо бекор шуд.")
+    
+    await message.answer("✅ Закази шумо бекор шуд.")
     
     await state.clear()
 
@@ -150,6 +155,41 @@ async def show_branches(message: Message):
         "2️⃣ Саховат (пушти бозор)\n"
         "3️⃣ 9 км (назди Шарк Транс)"
     )
+
+@dp.message(F.text == 'Ивази заказхо')
+async def edit_zakaz_start(message: Message, state: FSMContext):
+    await message.answer("Ид заказа, который хотите изменить:")
+    await state.set_state(EditZakaz.zakaz_id)
+@dp.message(EditZakaz.zakaz_id)
+async def get_zakaz_id(message: Message, state: FSMContext):
+    await state.update_data(zakaz_id=message.text)
+    await message.answer("Что хотите изменить? Напишите: kod, vazn, или adress.")
+    await state.set_state(EditZakaz.field)
+@dp.message(EditZakaz.field)
+async def get_field(message: Message, state: FSMContext):
+    field = message.text
+    if field not in ["kod", "vazn", "adress"]:
+        await message.answer("Только: kod, vazn, или adress.")
+        return
+    await state.update_data(field=field)
+    await message.answer("Напишите новое значение:")
+    await state.set_state(EditZakaz.new_value)
+@dp.message(EditZakaz.new_value)
+async def apply_update(message: Message, state: FSMContext):
+    data = await state.get_data()
+    zakaz_id = int(data["zakaz_id"])
+    field = data["field"]
+    new_value = message.text
+
+    if field == "kod":
+        update_kargo_full(zakaz_id, new_kod=new_value)
+    elif field == "vazn":
+        update_kargo_full(zakaz_id, new_vazn=new_value)
+    elif field == "adress":
+        update_kargo_full(zakaz_id, new_adres=new_value)
+
+    await message.answer(f"Заказ {zakaz_id} обновлен: поле {field} теперь «{new_value}».")
+    await state.clear()
 
 async def main():
     init_models()
