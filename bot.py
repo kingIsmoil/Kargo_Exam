@@ -19,15 +19,16 @@ class Zakaz(StatesGroup):
     kod_id=State()
     vazn=State()
     adress=State()
+    user_id=State()
 zakaz=[]
 
 class User(StatesGroup):
     phone_number = State()
     ind_id = State()
-
+    telegram_id=State()
 markub=ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Номнавис кардан"),KeyboardButton(text="Заказ равон кардан")],
+        [KeyboardButton(text="Заказ равон кардан")],
         [KeyboardButton(text="Филиалхои мо"),KeyboardButton(text="Оиди карго")]
     ],
     resize_keyboard=True
@@ -48,8 +49,7 @@ async def start_pol(message:Message,state:FSMContext):
         await message.answer('vvedite nomer telephona')
         await state.set_state(User.phone_number)
     else:
-        await message.answer('viuje zaregistrirovani')
-        await message.answer('viberite knopki:', reply_markup=markub())
+        await message.answer('viberite knopki:', reply_markup=markub)
 
 @dp.message(User.phone_number)
 async def get_phone(message:Message,state:FSMContext):
@@ -68,39 +68,51 @@ async def get_ind(message:Message, state:FSMContext):
     con.commit()
     close_connection(con,cur)
     await message.answer('vi zaregistrirovani')
+    await state.clear()
 
-@dp.message(F.text=="Заказ равон кардан okok")
+@dp.message(F.text=="Заказ равон кардан")
 async def zakaz_hundler(message:Message,state:FSMContext):
     await state.set_state(Zakaz.kod_id)
     await message.answer("Код id борро равон кунед: ")
 
+# 3. Гирифтани kod_id ва гузаштан ба вазн
 @dp.message(Zakaz.kod_id)
-async def kod_id_hundler(message:Message,state:FSMContext):
+async def kod_id_hundler(message: Message, state: FSMContext):
     await state.update_data(kod_id=message.text)
     await state.set_state(Zakaz.vazn)
-    await message.answer("Бори шумо чанд кг аст :")
+    await message.answer("Бори шумо чанд кг аст?")
 
+# 4. Гирифтани вазн ва гузаштан ба user_id
 @dp.message(Zakaz.vazn)
-async def vazn_hundler(message:Message,state:FSMContext):
+async def vazn_hundler(message: Message, state: FSMContext):
     await state.update_data(vazn=message.text)
-    await state.set_state(Zakaz.adress)
-    await message.answer("Лутфан аддреси худро пурра равон кунед :")
-# salom
+    await state.set_state(Zakaz.user_id)
+    await message.answer("Лутфан, инчоро клик  кунед/sendaddress.")
 
+# 5. Гирифтани user_id (ё тут оварда мешавад аз message.from_user.id, агар корбар аллакай дар система)
+@dp.message(Zakaz.user_id)
+async def get_user(message: Message, state: FSMContext):
+    await state.update_data(user_id=message.from_user.id)
+    await state.set_state(Zakaz.adress)
+    await message.answer("Ҳозир адреси пурраи худро ворид кунед:")
+
+# 6. Гирифтани адрес ва сабти фармоиш
 @dp.message(Zakaz.adress)
-async def adrez_hundler(message:Message,state:FSMContext):
-    zakaz= await state.update_data(adress=message.text)
-    await message.answer("Шумо бомувафакият закази худро равон кардед. Дар муддати 15 то 25 руз даставка мекунем")
+async def adress_hundler(message: Message, state: FSMContext):
     await state.update_data(adress=message.text)
     data = await state.get_data()
+
     init_kargos({
         "kod": data["kod_id"],
         "vazn": data["vazn"],
-        "adress": data["adress"]
+        "adress": data["adress"],
+        "user_id": data["user_id"]
     })
-    await message.answer("Шумо бомуваффақият закази худро равон кардед. Дар муддати 15 то 25 рӯз даставка мекунем.")
-    await state.clear()
 
+    await message.answer(
+        "Шумо бомуваффақият фармоиши худро равон кардед. Дар муддати 15–25 рӯз даставка мекунем."
+    )
+    await state.clear()
 
 
 
