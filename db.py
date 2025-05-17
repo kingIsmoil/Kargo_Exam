@@ -15,24 +15,26 @@ def init_models():
     cur.execute(
         '''
     CREATE TABLE IF NOT EXISTS users(
-        telegram_id bigint primary key,
+        telegram_id bigint,
         username varchar(50),
         phone_number varchar(20),
-        index varchar(50)
+        ind_id varchar(50)
     );
 '''
     )
     cur.execute(
         '''
         CREATE TABLE IF NOT EXISTS kargos(
-            id primary key autoincrements,
+            id integer primary key autoincrement,
             kod varchar(50),
             vazn decimal(10,3),
             adress text,
-            FOREIGN KEY (user_id) REFERENCES user(telegram_id) ON DELETE CASCADE
+            user_id int,
+            FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
         );
-'''
+        '''
     )
 
     con.commit()
     close_connection(con,cur)
+    
