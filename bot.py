@@ -1,142 +1,175 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types, F,filters
+from aiogram import Bot, Dispatcher, types, F, filters
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from datetime import datetime
-from db import init_models, init_obj,init_kargos,show_zakaz,delete_zakaz,update_kargo_full,open_connection,close_connection
+from db import (
+    init_models, init_kargos, show_zakaz,
+    delete_zakaz, open_connection, close_connection,update_kargo_full
+)
 
-TOKEN = '8144030905:AAEYkyyWUJEq9YZ7IgLLHlHpO_-8pVwbBK0'
+TOKEN = "7955520574:AAFnwODOcjoz4tavTWvwN3_RNzPIwUpe_yA"  
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher()
-
+dp = Dispatcher(storage=MemoryStorage())
 
 class Zakaz(StatesGroup):
-    kod_id=State()
-    vazn=State()
-    adress=State()
-    user_id=State()
-zakaz=[]
+    kod_id = State()
+    vazn = State()
+    adress = State()
+    user_id = State()
+    deleted_id = State()
 
+class User(StatesGroup):
+    phone_number = State()
+    ind_id = State()
 class EditZakaz(StatesGroup):
     zakaz_id = State()
     field = State()
     new_value = State()
 
-
-class User(StatesGroup):
-    phone_number = State()
-    ind_id = State()
-    telegram_id=State()
-markub=ReplyKeyboardMarkup(
+main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Заказ равон кардан"),KeyboardButton(text="update zakaz")],
-        [KeyboardButton(text="Филиалхои мо"),KeyboardButton(text="Оиди карго")]
+        [KeyboardButton(text="📦 Заказ равон кардан")],
+        [KeyboardButton(text="🏢 Филиалхои мо"), KeyboardButton(text="ℹ️ Оиди карго")],
+        [KeyboardButton(text="📋 Дидани заказхо"), KeyboardButton(text="❌ Отмена заказ"),KeyboardButton(text="Ивази заказхо")]
     ],
     resize_keyboard=True
 )
 
-
-
-
-
-@dp.message(filters.Command("start"))
-async def start_pol(message:Message,state:FSMContext):
-    await message.answer("Ба Каргои Сомон мо хуш омадед барои хамкори ташаккур",reply_markup=markub)
+@dp.message(Command("start"))
+async def start_handler(message: Message, state: FSMContext):
+    await message.answer("Хуш омадед ба Somon Cargo!", reply_markup=main_menu)
     con = open_connection()
     cur = con.cursor()
     cur.execute("SELECT * FROM users WHERE telegram_id = ?", (message.from_user.id,))
     user = cur.fetchone()
     if not user:
-        await message.answer('vvedite nomer telephona')
+        await message.answer("📞 Рақами телефони худро ворид кунед:")
         await state.set_state(User.phone_number)
     else:
-        await message.answer('viberite knopki:', reply_markup=markub)
+        await message.answer("📌 Аз меню интихоб кунед:")
+    close_connection(con, cur)
 
 @dp.message(User.phone_number)
-async def get_phone(message:Message,state:FSMContext):
-    await state.update_data(phone_number = message.text)
-    await message.answer('wwedite index')
+async def get_phone(message: Message, state: FSMContext):
+    if not message.text.isdigit():
+        await message.answer("❗ Илтимос, танҳо рақам ворид кунед.")
+        return
+    await state.update_data(phone_number=message.text)
+    await message.answer("📮 Индекси почтаро ворид кунед:")
     await state.set_state(User.ind_id)
 
 @dp.message(User.ind_id)
-async def get_ind(message:Message, state:FSMContext):
-    await state.update_data(ind_id = message.text)
+async def get_ind(message: Message, state: FSMContext):
     data = await state.get_data()
     con = open_connection()
     cur = con.cursor()
-    cur.execute("INSERT INTO users(telegram_id, username, phone_number, ind_id) VALUES (?, ? , ?, ?)", 
-            (message.from_user.id, message.from_user.full_name, data['phone_number'], data['ind_id']))
+    cur.execute(
+        "INSERT INTO users(telegram_id, username, phone_number, ind_id) VALUES (?, ?, ?, ?)",
+        (message.from_user.id, message.from_user.full_name, data["phone_number"], message.text)
+    )
     con.commit()
-    close_connection(con,cur)
-    await message.answer('vi zaregistrirovani')
+    close_connection(con, cur)
     await state.clear()
+    await message.answer("🎉 Шумо бомуваффақият сабт шудед!", reply_markup=main_menu)
 
-@dp.message(F.text=="Заказ равон кардан")
-async def zakaz_hundler(message:Message,state:FSMContext):
+@dp.message(F.text == "📦 Заказ равон кардан")
+async def zakaz_start(message: Message, state: FSMContext):
     await state.set_state(Zakaz.kod_id)
-    await message.answer("Код id борро равон кунед: ")
+    await message.answer("🔢 Код ID-и борро ворид кунед:")
 
-# 3. Гирифтани kod_id ва гузаштан ба вазн
 @dp.message(Zakaz.kod_id)
-async def kod_id_hundler(message: Message, state: FSMContext):
+async def zakaz_vazn(message: Message, state: FSMContext):
     await state.update_data(kod_id=message.text)
     await state.set_state(Zakaz.vazn)
-    await message.answer("Бори шумо чанд кг аст?")
+    await message.answer("⚖️ Вазни борро ворид кунед (кг):")
 
 @dp.message(Zakaz.vazn)
-async def vazn_hundler(message: Message, state: FSMContext):
+async def zakaz_adress(message: Message, state: FSMContext):
+    if not message.text.replace(".", "").isdigit():
+        await message.answer("❗ Лутфан, вазнро бо рақам нависед!")
+        return
     await state.update_data(vazn=message.text)
-    await state.set_state(Zakaz.user_id)
-    await message.answer("Лутфан, инчоро клик  кунед /sendaddress.")
-
-@dp.message(Zakaz.user_id)
-async def get_user(message: Message, state: FSMContext):
-    await state.update_data(user_id=message.from_user.id)
     await state.set_state(Zakaz.adress)
-    await message.answer("Ҳозир адреси пурраи худро ворид кунед:")
+    await message.answer("📍 Адреси пурраро ворид кунед:")
 
-GROUP_ID = -1002525875441
 @dp.message(Zakaz.adress)
-async def adress_hundler(message: Message, state: FSMContext):
-    await state.update_data(adress=message.text)
+async def zakaz_finish(message: Message, state: FSMContext):
+    await state.update_data(adress=message.text, user_id=message.from_user.id)
     data = await state.get_data()
-
     init_kargos({
         "kod": data["kod_id"],
         "vazn": data["vazn"],
         "adress": data["adress"],
         "user_id": data["user_id"]
     })
-
-    await message.answer(
-        "Шумо бомуваффақият фармоиши худро равон кардед. Дар муддати 15–25 рӯз даставка мекунем."
-    )
-    await bot.send_message(
-        GROUP_ID,
-        f" ot {message.from_user.full_name}:\n\n{data['kod_id']}\n {data['adress']} \n {data['adress']}"
-    )
+    await message.answer("✅ Закази шумо қабул шуд. Дар 15–25 рӯз мерасад.")
     await state.clear()
 
+@dp.message(F.text == "📋 Дидани заказхо")
+async def show_my_orders(message: Message):
+    zakazho = show_zakaz()
+    if not zakazho:
+        await message.answer("⛔ Шумо ягон заказ надоред.")
+        return
+    response = "📦 Заказҳои шумо:\n\n"
+    for zakaz in zakazho:
+        response += (
+            f"Id : {zakaz[0]} \n"
+            f"🔢 Код: {zakaz[1]}\n"
+            f"⚖️ Вазн: {zakaz[2]} кг\n"
+            f"📍 Адрес: {zakaz[3]}\n\n"
+        )
+    await message.answer(response)
 
-@dp.message(F.text == 'update zakaz')
+@dp.message(F.text == "❌ Отмена заказ")
+async def delete_order_prompt(message: Message, state: FSMContext):
+    await state.set_state(Zakaz.deleted_id)
+    await message.answer("🗑 Код ID-и заказро нависед барои бекор кардан:")
+
+@dp.message(Zakaz.deleted_id)
+async def delete_order_confirm(message: Message, state: FSMContext):
+    deleted = delete_zakaz(message.text)
+    
+    await message.answer("✅ Закази шумо бекор шуд.")
+    
+    await state.clear()
+
+@dp.message(F.text == "ℹ️ Оиди карго")
+async def about_info(message: Message):
+    await message.answer(
+        "🚚 Somon Cargo — каргои бехатар ва зуд!\n"
+        "⏱ Мӯҳлати расондан: 15-25 рӯз\n"
+        "💰 Нарх: 2$–3$, дар Душанбе — ройгон!\n"
+        "📦 Мо кафолат медиҳем, ки бори шумо саривақт мерасад."
+    )
+
+@dp.message(F.text == "🏢 Филиалхои мо")
+async def show_branches(message: Message):
+    await message.answer(
+        "🏢 Филиалҳои мо дар Тоҷикистон:\n\n"
+        "1️⃣ Ширин (назди фабрика)\n"
+        "2️⃣ Саховат (пушти бозор)\n"
+        "3️⃣ 9 км (назди Шарк Транс)"
+    )
+
+@dp.message(F.text == 'Ивази заказхо')
 async def edit_zakaz_start(message: Message, state: FSMContext):
     await message.answer("Ид заказа, который хотите изменить:")
     await state.set_state(EditZakaz.zakaz_id)
 @dp.message(EditZakaz.zakaz_id)
 async def get_zakaz_id(message: Message, state: FSMContext):
     await state.update_data(zakaz_id=message.text)
-    await message.answer("Что хотите изменить? Напишите: `kod`, `vazn`, или `adress`.")
+    await message.answer("Что хотите изменить? Напишите: kod, vazn, или adress.")
     await state.set_state(EditZakaz.field)
 @dp.message(EditZakaz.field)
 async def get_field(message: Message, state: FSMContext):
     field = message.text
     if field not in ["kod", "vazn", "adress"]:
-        await message.answer("Только: `kod`, `vazn`, или `adress`.")
+        await message.answer("Только: kod, vazn, или adress.")
         return
     await state.update_data(field=field)
     await message.answer("Напишите новое значение:")
@@ -148,7 +181,6 @@ async def apply_update(message: Message, state: FSMContext):
     field = data["field"]
     new_value = message.text
 
-    # Вызов функции
     if field == "kod":
         update_kargo_full(zakaz_id, new_kod=new_value)
     elif field == "vazn":
@@ -156,45 +188,11 @@ async def apply_update(message: Message, state: FSMContext):
     elif field == "adress":
         update_kargo_full(zakaz_id, new_adres=new_value)
 
-    await message.answer(f"Заказ {zakaz_id} обновлен: поле `{field}` теперь «{new_value}».")
+    await message.answer(f"Заказ {zakaz_id} обновлен: поле {field} теперь «{new_value}».")
     await state.clear()
-
-
-
-
-@dp.message(F.text == 'Оиди карго')
-async def a_baout(messege:Message):
-    await messege.answer(
-        """ Мо Somon Cargo карго барои бехатар ва 
-            зуд дар вакти муайян бурда расонидани борхои 
-            шумо . Мо борхо шуморо метавонем дар муддати 
-            15-25 руз оварда мерасонем . Нархи хизматрасонии 
-            мо аз 2$ то 3$ мебошад ва хато дар дохили шахри
-            Душанбе доставкаи ройгон дорем. мо ба хизматрасони 
-            худ кафолат медихем ки борхои шуморо дар вакти
-            муайян ва бе мушкили мерасонем.
-        """)
-    
-    
-@dp.message(F.text == 'Филиалхои мо')
-async def a_filial(messege:Message):
-    await messege.answer(
-    """
-        Мо дар Чумхурии Точикистон 3 то филиали худро дорем:\n
-        1. Фабрикаи "Ширин" -  дар назди фабрика
-        2. "Саховат" - пушти бозори Саховат
-        3. "9 km" - дар наздики "Шарк Транс"
-    """
-    )
-
-
-
-
-
 
 async def main():
     init_models()
-    print('ok')
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

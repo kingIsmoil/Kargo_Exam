@@ -80,7 +80,7 @@ def show_zakaz():
 def delete_zakaz(kr_id):
     conn = open_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM kargos WHERE id = ?", (kr_id,))
+    cur.execute("DELETE FROM kargos WHERE kod = ?", (kr_id,))
     conn.commit()
     close_connection(conn, cur)
     print("Deleted succefully")
