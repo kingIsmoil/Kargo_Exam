@@ -20,6 +20,10 @@ dp = Dispatcher()
 
 
 
+
+
+
+
 async def main():
     init_models()
     print('ok')

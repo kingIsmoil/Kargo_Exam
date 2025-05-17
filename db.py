@@ -33,3 +33,6 @@ def init_models():
         );
 '''
     )
+
+    con.commit()
+    close_connection(con,cur)
