@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
-from db import init_models, init_obj,init_kargos,show_zakaz,delete_zakaz,update_zakaz,open_connection,close_connection
+from db import init_models, init_obj,init_kargos,show_zakaz,delete_zakaz,update_kargo_full,open_connection,close_connection
 
 TOKEN = '8144030905:AAEYkyyWUJEq9YZ7IgLLHlHpO_-8pVwbBK0'
 
@@ -22,13 +22,19 @@ class Zakaz(StatesGroup):
     user_id=State()
 zakaz=[]
 
+class EditZakaz(StatesGroup):
+    zakaz_id = State()
+    field = State()
+    new_value = State()
+
+
 class User(StatesGroup):
     phone_number = State()
     ind_id = State()
     telegram_id=State()
 markub=ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Заказ равон кардан")],
+        [KeyboardButton(text="Заказ равон кардан"),KeyboardButton(text="update zakaz")],
         [KeyboardButton(text="Филиалхои мо"),KeyboardButton(text="Оиди карго")]
     ],
     resize_keyboard=True
@@ -82,21 +88,19 @@ async def kod_id_hundler(message: Message, state: FSMContext):
     await state.set_state(Zakaz.vazn)
     await message.answer("Бори шумо чанд кг аст?")
 
-# 4. Гирифтани вазн ва гузаштан ба user_id
 @dp.message(Zakaz.vazn)
 async def vazn_hundler(message: Message, state: FSMContext):
     await state.update_data(vazn=message.text)
     await state.set_state(Zakaz.user_id)
-    await message.answer("Лутфан, инчоро клик  кунед/sendaddress.")
+    await message.answer("Лутфан, инчоро клик  кунед /sendaddress.")
 
-# 5. Гирифтани user_id (ё тут оварда мешавад аз message.from_user.id, агар корбар аллакай дар система)
 @dp.message(Zakaz.user_id)
 async def get_user(message: Message, state: FSMContext):
     await state.update_data(user_id=message.from_user.id)
     await state.set_state(Zakaz.adress)
     await message.answer("Ҳозир адреси пурраи худро ворид кунед:")
 
-# 6. Гирифтани адрес ва сабти фармоиш
+GROUP_ID = -1002525875441
 @dp.message(Zakaz.adress)
 async def adress_hundler(message: Message, state: FSMContext):
     await state.update_data(adress=message.text)
@@ -112,7 +116,49 @@ async def adress_hundler(message: Message, state: FSMContext):
     await message.answer(
         "Шумо бомуваффақият фармоиши худро равон кардед. Дар муддати 15–25 рӯз даставка мекунем."
     )
+    await bot.send_message(
+        GROUP_ID,
+        f" ot {message.from_user.full_name}:\n\n{data['kod_id']}\n {data['adress']} \n {data['adress']}"
+    )
     await state.clear()
+
+
+@dp.message(F.text == 'update zakaz')
+async def edit_zakaz_start(message: Message, state: FSMContext):
+    await message.answer("Ид заказа, который хотите изменить:")
+    await state.set_state(EditZakaz.zakaz_id)
+@dp.message(EditZakaz.zakaz_id)
+async def get_zakaz_id(message: Message, state: FSMContext):
+    await state.update_data(zakaz_id=message.text)
+    await message.answer("Что хотите изменить? Напишите: `kod`, `vazn`, или `adress`.")
+    await state.set_state(EditZakaz.field)
+@dp.message(EditZakaz.field)
+async def get_field(message: Message, state: FSMContext):
+    field = message.text
+    if field not in ["kod", "vazn", "adress"]:
+        await message.answer("Только: `kod`, `vazn`, или `adress`.")
+        return
+    await state.update_data(field=field)
+    await message.answer("Напишите новое значение:")
+    await state.set_state(EditZakaz.new_value)
+@dp.message(EditZakaz.new_value)
+async def apply_update(message: Message, state: FSMContext):
+    data = await state.get_data()
+    zakaz_id = int(data["zakaz_id"])
+    field = data["field"]
+    new_value = message.text
+
+    # Вызов функции
+    if field == "kod":
+        update_kargo_full(zakaz_id, new_kod=new_value)
+    elif field == "vazn":
+        update_kargo_full(zakaz_id, new_vazn=new_value)
+    elif field == "adress":
+        update_kargo_full(zakaz_id, new_adres=new_value)
+
+    await message.answer(f"Заказ {zakaz_id} обновлен: поле `{field}` теперь «{new_value}».")
+    await state.clear()
+
 
 
 
@@ -140,6 +186,7 @@ async def a_filial(messege:Message):
         3. "9 km" - дар наздики "Шарк Транс"
     """
     )
+
 
 
 
