@@ -70,7 +70,7 @@ async def get_ind(message:Message, state:FSMContext):
     close_connection(con,cur)
     await message.answer('vi zaregistrirovani')
 
-@dp.message(F.text=="Заказ равон кардан")
+@dp.message(F.text=="Заказ равон кардан okok")
 async def zakaz_hundler(message:Message,state:FSMContext):
     await state.set_state(Zakaz.kod_id)
     await message.answer("Код id борро равон кунед: ")
