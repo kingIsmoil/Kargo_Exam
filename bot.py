@@ -73,26 +73,25 @@ async def adrez_hundler(message:Message,state:FSMContext):
 @dp.message(F.text == 'Оиди карго')
 async def a_baout(messege:Message):
     await messege.answer(
-        """Cargo refers to the goods
-           or merchandise that is transported from one
-           location to another, typically by ship, aircraft,
-           train, or truck. It encompasses a wide range of items, 
-           including unfinished goods, finished products, machinery, 
-           vehicles, and consumer goods. In essence, cargo is the 
-           material being moved within shipping and logistics operations. 
-           
-           Our cargo will deliver your cargo safely, quickly and on time.
-           """)
+        """ Мо Somon Cargo карго барои бехатар ва 
+            зуд дар вакти муайян бурда расонидани борхои 
+            шумо . Мо борхо шуморо метавонем дар муддати 
+            15-25 руз оварда мерасонем . Нархи хизматрасонии 
+            мо аз 2$ то 3$ мебошад ва хато дар дохили шахри
+            Душанбе доставкаи ройгон дорем. мо ба хизматрасони 
+            худ кафолат медихем ки борхои шуморо дар вакти
+            муайян ва бе мушкили мерасонем.
+        """)
     
 @dp.message(F.text == 'Филиалхои мо')
 async def a_filial(messege:Message):
     await messege.answer(
-        """
-        We have 3 branches in the Republic of Tajikistan:\n
-        1. "Ширин"factory, next to the factory 
-        2. "Саховат" in front of the Саховат market
-        3. "9 km", next to the "Шарк Транс"
-        """
+    """
+        Мо дар Чумхурии Точикистон 3 то филиали худро дорем:\n
+        1. Фабрикаи "Ширин" -  дар назди фабрика
+        2. "Саховат" - пушти бозори Саховат
+        3. "9 km" - дар наздики "Шарк Транс"
+    """
     )
 
 
