@@ -67,10 +67,10 @@ def init_kargos(kargos):
 
 
 
-def show_zakaz():
+def show_zakaz(telegram_id):
     conn=open_connection()
     cur=conn.cursor()
-    cur.execute("select * from kargos")
+    cur.execute("select * from kargos where telegram_id = ?", (telegram_id,))
     products = cur.fetchall()
     conn.commit()
     

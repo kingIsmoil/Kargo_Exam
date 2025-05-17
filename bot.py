@@ -10,7 +10,7 @@ from db import (
     delete_zakaz, open_connection, close_connection,update_kargo_full
 )
 
-TOKEN = "7955520574:AAFnwODOcjoz4tavTWvwN3_RNzPIwUpe_yA"  
+TOKEN = "8144030905:AAEYkyyWUJEq9YZ7IgLLHlHpO_-8pVwbBK0"  
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -93,9 +93,17 @@ async def zakaz_adress(message: Message, state: FSMContext):
         await message.answer("❗ Лутфан, вазнро бо рақам нависед!")
         return
     await state.update_data(vazn=message.text)
-    await state.set_state(Zakaz.adress)
-    await message.answer("📍 Адреси пурраро ворид кунед:")
+    await state.set_state(Zakaz.user_id)
+    await message.answer("📍ba in zer kuned /sendaddress")
 
+@dp.message(Zakaz.user_id)
+async def get_user(message:Message, state:FSMContext):
+    await state.update_data(user_id = message.from_user.id)
+    await state.set_state(Zakaz.adress)
+    await message.answer('Addresi khudro vorid kuned')
+
+
+GROUP_ID = -1002525875441
 @dp.message(Zakaz.adress)
 async def zakaz_finish(message: Message, state: FSMContext):
     await state.update_data(adress=message.text, user_id=message.from_user.id)
@@ -107,11 +115,17 @@ async def zakaz_finish(message: Message, state: FSMContext):
         "user_id": data["user_id"]
     })
     await message.answer("✅ Закази шумо қабул шуд. Дар 15–25 рӯз мерасад.")
+    await bot.send_message(
+    GROUP_ID,
+    f" ot {message.from_user.full_name}:\n\n adres:{data['adress']}\n kod:{data['kod_id']}"
+    )
+
     await state.clear()
 
 @dp.message(F.text == "📋 Дидани заказхо")
 async def show_my_orders(message: Message):
-    zakazho = show_zakaz()
+    telegram_id = message.from_user.id
+    zakazho = show_zakaz(telegram_id)
     if not zakazho:
         await message.answer("⛔ Шумо ягон заказ надоред.")
         return
