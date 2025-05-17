@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from datetime import datetime
-from db import open_connection, init_models, close_connection
+from db import init_models, init_obj,init_kargos,show_zakaz,delete_zakaz,update_zakaz
 
 TOKEN = '8144030905:AAEYkyyWUJEq9YZ7IgLLHlHpO_-8pVwbBK0'
 
@@ -64,8 +64,15 @@ async def vazn_hundler(message:Message,state:FSMContext):
 @dp.message(Zakaz.adress)
 
 async def adrez_hundler(message:Message,state:FSMContext):
-    zakaz= await state.update_data(addres=message.text)
-    await message.answer("Шумо бомувафакият закази худро равон кардед. Дар муддати 15 то 25 руз даставка мекунем")
+    await state.update_data(adress=message.text)
+    data = await state.get_data()
+    init_kargos({
+        "kod": data["kod_id"],
+        "vazn": data["vazn"],
+        "adress": data["adress"]
+    })
+    await message.answer("Шумо бомуваффақият закази худро равон кардед. Дар муддати 15 то 25 рӯз даставка мекунем.")
+    await state.clear()
 
 
 
