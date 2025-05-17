@@ -58,7 +58,7 @@ async def vazn_hundler(message:Message,state:FSMContext):
     await state.update_data(vazn=message.text)
     await state.set_state(Zakaz.adress)
     await message.answer("Лутфан аддреси худро пурра равон кунед :")
-
+# salom
 
 @dp.message(Zakaz.adress)
 
