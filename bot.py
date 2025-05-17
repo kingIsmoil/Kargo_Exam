@@ -70,6 +70,32 @@ async def adrez_hundler(message:Message,state:FSMContext):
 
 
 
+@dp.message(F.text == 'Оиди карго')
+async def a_baout(messege:Message):
+    await messege.answer(
+        """Cargo refers to the goods
+           or merchandise that is transported from one
+           location to another, typically by ship, aircraft,
+           train, or truck. It encompasses a wide range of items, 
+           including unfinished goods, finished products, machinery, 
+           vehicles, and consumer goods. In essence, cargo is the 
+           material being moved within shipping and logistics operations. 
+           
+           Our cargo will deliver your cargo safely, quickly and on time.
+           """)
+    
+@dp.message(F.text == 'Филиалхои мо')
+async def a_filial(messege:Message):
+    await messege.answer(
+        """
+        We have 3 branches in the Republic of Tajikistan:\n
+        1. "Ширин"factory, next to the factory 
+        2. "Саховат" in front of the Саховат market
+        3. "9 km", next to the "Шарк Транс"
+        """
+    )
+
+
 
 
 
